@@ -250,10 +250,22 @@ export default class ApplicationInsightsQuery extends DataSourcePlugin<IQueryPar
       const selectedFilters = dependencies[dependency] || [];
       if (selectedFilters.length > 0) {
         const f = 'where ' + selectedFilters.map((value) => `${queryProperty}=="${value}"`).join(' or ');
-        q = isForked ? ` ${f} |\n ${q} ` : q.replace(/^(\s?\w+\s*?){1}(.)*/gim, '$1 | ' + f + ' $2');
-        return true;
+
+        // This has been rewritten with the code below as the replace pattern could not be matched.
+        // q = isForked ? ` ${f} |\n ${q} ` : q.replace(/^(\s?\w+\s*?){1}(.)*/gim, '$1 | ' + f + ' $2');
+
+        if (isForked) {
+          q = ` ${f} |\n ${q} `
+        } else {
+          const trimmedQuery = q.trim()
+          if (trimmedQuery.indexOf('customEvents') === 0) {
+            q = `customEvents | ${f} ${trimmedQuery.substring(12, trimmedQuery.length)}`
+          } else {
+            q.replace(/^(\s?\w+\s*?){1}(.)*/gim, '$1 | ' + f + ' $2')
+          }
+        }
       }
-      return false;
+      return true;
     });
     return this.formatQuery(q, isForked);
   }
